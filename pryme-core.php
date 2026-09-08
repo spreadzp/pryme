@@ -6,7 +6,7 @@
  * Author:      PRIME
  * License:     GPL-2.0-or-later
  * Text Domain: prime-core
- * Requires PHP: 8.2
+ * Requires PHP: 8.1
  * Requires at least: 6.0
  *
  * @package prime-core
