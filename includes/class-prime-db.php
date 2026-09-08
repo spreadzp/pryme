@@ -41,8 +41,10 @@ class Prime_DB {
 	private function __construct() {
 		add_filter( 'prime_db_tables', array( $this, 'add_core_tables' ), 10, 2 );
 		add_filter( 'prime_db_tables', array( $this, 'add_task_tables' ), 11, 2 );
+		add_filter( 'prime_db_tables', array( $this, 'add_comm_tables' ), 12, 2 );
 		add_filter( 'prime_db_table_names', array( $this, 'add_core_table_names' ) );
 		add_filter( 'prime_db_table_names', array( $this, 'add_task_table_names' ) );
+		add_filter( 'prime_db_table_names', array( $this, 'add_comm_table_names' ) );
 	}
 
 	/**
@@ -394,6 +396,116 @@ class Prime_DB {
 				PRIMARY KEY  (id),
 				KEY idx_task_date (task_id, created_at),
 				KEY idx_user (user_id)
+			) ENGINE=InnoDB {$charset};",
+		);
+	}
+
+	/**
+	 * Add communication tables to the dbDelta queue.
+	 *
+	 * @param array  $tables  SQL strings from previous filters.
+	 * @param string $charset Charset collate string.
+	 * @return array
+	 */
+	public function add_comm_tables( $tables, $charset ) {
+		return array_merge( $tables, $this->comm_tables( $charset ) );
+	}
+
+	/**
+	 * Add communication table names to the drop queue.
+	 *
+	 * @param array $names Table names from previous filters.
+	 * @return array
+	 */
+	public function add_comm_table_names( $names ) {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'prime_';
+
+		return array_merge(
+			$names,
+			array(
+				$prefix . 'activity_log',
+				$prefix . 'chat_channels',
+				$prefix . 'chat_messages',
+				$prefix . 'notifications',
+			)
+		);
+	}
+
+	/**
+	 * Returns SQL for 4 communication/logging tables.
+	 *
+	 * @param string $charset Charset collate string.
+	 * @return array Array of CREATE TABLE SQL strings.
+	 */
+	public function comm_tables( $charset ) {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'prime_';
+
+		return array(
+			// 14. Activity log.
+			"CREATE TABLE {$prefix}activity_log (
+				id              BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				client_id       BIGINT(20) UNSIGNED DEFAULT NULL,
+				user_id         BIGINT(20) UNSIGNED NOT NULL,
+				action          VARCHAR(50) NOT NULL,
+				entity_type     VARCHAR(30) NOT NULL,
+				entity_id       BIGINT(20) UNSIGNED DEFAULT NULL,
+				meta            LONGTEXT,
+				ip_address      VARCHAR(45),
+				created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY idx_client_date (client_id, created_at),
+				KEY idx_user_date (user_id, created_at),
+				KEY idx_entity (entity_type, entity_id)
+			) ENGINE=InnoDB {$charset};",
+
+			// 15. Chat channels.
+			"CREATE TABLE {$prefix}chat_channels (
+				id              BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				client_id       BIGINT(20) UNSIGNED NOT NULL,
+				name            VARCHAR(100) NOT NULL,
+				type            VARCHAR(20) NOT NULL DEFAULT 'public',
+				created_by      BIGINT(20) UNSIGNED NOT NULL,
+				created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+				deleted_at      DATETIME DEFAULT NULL,
+				PRIMARY KEY  (id),
+				KEY idx_client (client_id)
+			) ENGINE=InnoDB {$charset};",
+
+			// 16. Chat messages.
+			"CREATE TABLE {$prefix}chat_messages (
+				id              BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				client_id       BIGINT(20) UNSIGNED NOT NULL,
+				channel_id      BIGINT(20) UNSIGNED NOT NULL,
+				parent_id       BIGINT(20) UNSIGNED DEFAULT NULL,
+				user_id         BIGINT(20) UNSIGNED NOT NULL,
+				message         TEXT NOT NULL,
+				attachments     LONGTEXT,
+				created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+				deleted_at      DATETIME DEFAULT NULL,
+				PRIMARY KEY  (id),
+				KEY idx_channel_date (channel_id, created_at),
+				KEY idx_client_channel (client_id, channel_id),
+				KEY idx_parent (parent_id)
+			) ENGINE=InnoDB {$charset};",
+
+			// 17. Notifications.
+			"CREATE TABLE {$prefix}notifications (
+				id              BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				user_id         BIGINT(20) UNSIGNED NOT NULL,
+				client_id       BIGINT(20) UNSIGNED DEFAULT NULL,
+				type            VARCHAR(50) NOT NULL,
+				title           VARCHAR(255) NOT NULL,
+				message         TEXT,
+				link            VARCHAR(500),
+				is_read         TINYINT(1) NOT NULL DEFAULT 0,
+				created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY idx_user_read (user_id, is_read, created_at),
+				KEY idx_client (client_id)
 			) ENGINE=InnoDB {$charset};",
 		);
 	}
