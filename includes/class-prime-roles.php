@@ -61,6 +61,8 @@ class Prime_Roles {
 			);
 		}
 
+		$this->cleanup_legacy_roles();
+
 		$employee = get_role( 'prime_employee' );
 		if ( $employee ) {
 			$caps = array(
@@ -88,6 +90,27 @@ class Prime_Roles {
 			);
 			foreach ( $caps as $cap ) {
 				$admin->add_cap( $cap );
+			}
+		}
+	}
+
+	/**
+	 * Remove legacy pryme_* roles left from older plugin versions.
+	 * Reassign users to the new prime_* roles before removing.
+	 */
+	private function cleanup_legacy_roles() {
+		$legacy_map = array(
+			'pryme_employee' => 'prime_employee',
+			'pryme_client'   => 'prime_client',
+		);
+
+		foreach ( $legacy_map as $old => $new ) {
+			if ( get_role( $old ) ) {
+				$users = get_users( array( 'role' => $old ) );
+				foreach ( $users as $user ) {
+					$user->set_role( $new );
+				}
+				remove_role( $old );
 			}
 		}
 	}
