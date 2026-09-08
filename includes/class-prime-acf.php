@@ -40,6 +40,7 @@ class Prime_ACF {
 	 */
 	private function __construct() {
 		add_action( 'acf/init', array( $this, 'register_fields' ) );
+		add_action( 'init', array( $this, 'register_fields' ), 20 );
 	}
 
 	/**
