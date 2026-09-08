@@ -34,3 +34,6 @@ Thumbs.db
 /coverage/
 /.phpunit.result.cache
 .php-cs-fixer.cache
+
+# Graphify knowledge graph
+/graphify-out/
