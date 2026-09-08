@@ -40,7 +40,9 @@ class Prime_DB {
 	 */
 	private function __construct() {
 		add_filter( 'prime_db_tables', array( $this, 'add_core_tables' ), 10, 2 );
+		add_filter( 'prime_db_tables', array( $this, 'add_task_tables' ), 11, 2 );
 		add_filter( 'prime_db_table_names', array( $this, 'add_core_table_names' ) );
+		add_filter( 'prime_db_table_names', array( $this, 'add_task_table_names' ) );
 	}
 
 	/**
@@ -246,6 +248,151 @@ class Prime_DB {
 				deleted_at      DATETIME DEFAULT NULL,
 				PRIMARY KEY  (id),
 				UNIQUE KEY uniq_client_user (client_id, user_id),
+				KEY idx_user (user_id)
+			) ENGINE=InnoDB {$charset};",
+		);
+	}
+
+	/**
+	 * Add task/Kanban tables to the dbDelta queue.
+	 *
+	 * @param array  $tables  SQL strings from previous filters.
+	 * @param string $charset Charset collate string.
+	 * @return array
+	 */
+	public function add_task_tables( $tables, $charset ) {
+		return array_merge( $tables, $this->task_tables( $charset ) );
+	}
+
+	/**
+	 * Add task/Kanban table names to the drop queue.
+	 *
+	 * @param array $names Table names from previous filters.
+	 * @return array
+	 */
+	public function add_task_table_names( $names ) {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'prime_';
+
+		return array_merge(
+			$names,
+			array(
+				$prefix . 'task_labels',
+				$prefix . 'task_label_assignees',
+				$prefix . 'task_subtasks',
+				$prefix . 'task_comments',
+				$prefix . 'task_attachments',
+				$prefix . 'kanban_columns',
+				$prefix . 'task_activity',
+			)
+		);
+	}
+
+	/**
+	 * Returns SQL for 7 task/Kanban tables.
+	 *
+	 * @param string $charset Charset collate string.
+	 * @return array Array of CREATE TABLE SQL strings.
+	 */
+	public function task_tables( $charset ) {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'prime_';
+
+		return array(
+			// 7. Task labels.
+			"CREATE TABLE {$prefix}task_labels (
+				id              BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				client_id       BIGINT(20) UNSIGNED NOT NULL,
+				title           VARCHAR(100) NOT NULL,
+				color           VARCHAR(20) NOT NULL DEFAULT '#6c757d',
+				created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY idx_client (client_id)
+			) ENGINE=InnoDB {$charset};",
+
+			// 8. Task label assignees (many-to-many).
+			"CREATE TABLE {$prefix}task_label_assignees (
+				id              BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				task_id         BIGINT(20) UNSIGNED NOT NULL,
+				label_id        BIGINT(20) UNSIGNED NOT NULL,
+				PRIMARY KEY  (id),
+				UNIQUE KEY uniq_task_label (task_id, label_id),
+				KEY idx_label (label_id)
+			) ENGINE=InnoDB {$charset};",
+
+			// 9. Task subtasks.
+			"CREATE TABLE {$prefix}task_subtasks (
+				id              BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				task_id         BIGINT(20) UNSIGNED NOT NULL,
+				title           VARCHAR(255) NOT NULL,
+				is_completed    TINYINT(1) NOT NULL DEFAULT 0,
+				position        INT(11) NOT NULL DEFAULT 0,
+				assigned_to     BIGINT(20) UNSIGNED DEFAULT NULL,
+				created_by      BIGINT(20) UNSIGNED NOT NULL,
+				created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY idx_task_position (task_id, position),
+				KEY idx_task_completed (task_id, is_completed)
+			) ENGINE=InnoDB {$charset};",
+
+			// 10. Task comments.
+			"CREATE TABLE {$prefix}task_comments (
+				id              BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				task_id         BIGINT(20) UNSIGNED NOT NULL,
+				user_id         BIGINT(20) UNSIGNED NOT NULL,
+				comment         TEXT NOT NULL,
+				mentions        LONGTEXT,
+				created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+				deleted_at      DATETIME DEFAULT NULL,
+				PRIMARY KEY  (id),
+				KEY idx_task_date (task_id, created_at),
+				KEY idx_user (user_id)
+			) ENGINE=InnoDB {$charset};",
+
+			// 11. Task attachments.
+			"CREATE TABLE {$prefix}task_attachments (
+				id              BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				task_id         BIGINT(20) UNSIGNED NOT NULL,
+				file_id         BIGINT(20) UNSIGNED DEFAULT NULL,
+				external_url    VARCHAR(500) DEFAULT NULL,
+				title           VARCHAR(255) DEFAULT NULL,
+				attached_by     BIGINT(20) UNSIGNED NOT NULL,
+				created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY idx_task (task_id),
+				KEY idx_file (file_id)
+			) ENGINE=InnoDB {$charset};",
+
+			// 12. Kanban columns.
+			"CREATE TABLE {$prefix}kanban_columns (
+				id              BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				client_id       BIGINT(20) UNSIGNED NOT NULL,
+				title           VARCHAR(100) NOT NULL,
+				status_key      VARCHAR(30) NOT NULL,
+				position        INT(11) NOT NULL DEFAULT 0,
+				is_system       TINYINT(1) NOT NULL DEFAULT 0,
+				wip_limit       INT(11) DEFAULT NULL,
+				color           VARCHAR(20) DEFAULT NULL,
+				created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY idx_client_position (client_id, position),
+				UNIQUE KEY uniq_client_status (client_id, status_key)
+			) ENGINE=InnoDB {$charset};",
+
+			// 13. Task activity.
+			"CREATE TABLE {$prefix}task_activity (
+				id              BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				task_id         BIGINT(20) UNSIGNED NOT NULL,
+				user_id         BIGINT(20) UNSIGNED NOT NULL,
+				action          VARCHAR(50) NOT NULL,
+				from_value      VARCHAR(255) DEFAULT NULL,
+				to_value        VARCHAR(255) DEFAULT NULL,
+				created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY idx_task_date (task_id, created_at),
 				KEY idx_user (user_id)
 			) ENGINE=InnoDB {$charset};",
 		);
