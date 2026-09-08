@@ -31,6 +31,7 @@ require_once PRIME_CORE_PATH . 'includes/class-prime-acf.php';
 require_once PRIME_CORE_PATH . 'includes/functions.php';
 
 // Initialize singletons.
+Prime_Portal::instance();
 Prime_CPT::instance();
 Prime_ACF::instance();
 

@@ -40,6 +40,7 @@ class Prime_Portal {
 	 */
 	private function __construct() {
 		add_shortcode( 'prime_portal', array( $this, 'portal_shell' ) );
+		add_shortcode( 'pryme_portal', array( $this, 'portal_shell' ) );
 	}
 
 	/**
