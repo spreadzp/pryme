@@ -1,0 +1,120 @@
+<?php
+/**
+ * Roles and capabilities for the PRIME platform.
+ *
+ * @package prime-core
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Roles and capabilities for the PRIME platform.
+ *
+ * @package prime-core
+ */
+class Prime_Roles {
+
+	/**
+	 * Singleton instance.
+	 *
+	 * @var Prime_Roles|null
+	 */
+	private static $instance = null;
+
+	/**
+	 * Get the singleton instance.
+	 *
+	 * @return Prime_Roles
+	 */
+	public static function instance() {
+		if ( null === self::$instance ) {
+			self::$instance = new self();
+		}
+		return self::$instance;
+	}
+
+	/**
+	 * Private constructor — hooks are registered lazily.
+	 */
+	private function __construct() {
+		add_action( 'init', array( $this, 'register_roles' ) );
+	}
+
+	/**
+	 * Register custom roles and assign capabilities.
+	 * Idempotent — safe to call on every init and on activation.
+	 */
+	public function register_roles() {
+		if ( ! get_role( 'prime_client' ) ) {
+			add_role( 'prime_client', 'Client', array( 'read' => true ) );
+		}
+		if ( ! get_role( 'prime_employee' ) ) {
+			add_role(
+				'prime_employee',
+				'Employee',
+				array(
+					'read'         => true,
+					'upload_files' => true,
+				)
+			);
+		}
+
+		$employee = get_role( 'prime_employee' );
+		if ( $employee ) {
+			$caps = array(
+				'prime_view_portal',
+				'prime_view_all_clients',
+				'prime_manage_tasks',
+			);
+			foreach ( $caps as $cap ) {
+				$employee->add_cap( $cap );
+			}
+		}
+
+		$client = get_role( 'prime_client' );
+		if ( $client ) {
+			$client->add_cap( 'prime_view_portal' );
+		}
+
+		$admin = get_role( 'administrator' );
+		if ( $admin ) {
+			$caps = array(
+				'prime_view_portal',
+				'prime_view_all_clients',
+				'prime_manage_tasks',
+				'prime_manage_clients',
+			);
+			foreach ( $caps as $cap ) {
+				$admin->add_cap( $cap );
+			}
+		}
+	}
+
+	/**
+	 * Get the portal page URL.
+	 *
+	 * @return string
+	 */
+	public function portal_url() {
+		$page = get_page_by_path( PRIME_PORTAL_SLUG );
+		return $page ? get_permalink( $page ) : home_url( '/' . PRIME_PORTAL_SLUG . '/' );
+	}
+
+	/**
+	 * Check if a user is staff (admin or employee with view_all_clients).
+	 *
+	 * @param WP_User|null $user User to check. Defaults to current user.
+	 * @return bool
+	 */
+	public function is_staff( $user = null ) {
+		if ( ! $user ) {
+			$user = wp_get_current_user();
+		}
+		if ( ! $user instanceof WP_User ) {
+			return false;
+		}
+		return user_can( $user, 'manage_options' ) || user_can( $user, 'prime_view_all_clients' );
+	}
+}

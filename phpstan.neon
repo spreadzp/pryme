@@ -6,7 +6,7 @@ parameters:
 
     paths:
         - includes/
-        - prime-core.php
+        - pryme-core.php
 
     excludePaths:
         - */vendor/*

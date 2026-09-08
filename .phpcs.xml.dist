@@ -21,6 +21,18 @@
     <!-- Prefixes -->
     <config name="prefixes" value="prime_,Prime_,PRIME_"/>
 
+    <!-- Custom capabilities -->
+    <rule ref="WordPress.WP.Capabilities">
+        <properties>
+            <property name="custom_capabilities" type="array">
+                <element value="prime_view_portal"/>
+                <element value="prime_view_all_clients"/>
+                <element value="prime_manage_tasks"/>
+                <element value="prime_manage_clients"/>
+            </property>
+        </properties>
+    </rule>
+
     <!-- Exclude patterns -->
     <exclude-pattern>*/vendor/*</exclude-pattern>
     <exclude-pattern>*/node_modules/*</exclude-pattern>
