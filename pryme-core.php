@@ -29,6 +29,7 @@ require_once PRIME_CORE_PATH . 'includes/class-prime-db.php';
 require_once PRIME_CORE_PATH . 'includes/class-prime-cpt.php';
 require_once PRIME_CORE_PATH . 'includes/class-prime-acf.php';
 require_once PRIME_CORE_PATH . 'includes/class-prime-routing.php';
+require_once PRIME_CORE_PATH . 'includes/class-prime-magic-login.php';
 require_once PRIME_CORE_PATH . 'includes/functions.php';
 
 // Initialize singletons.
@@ -36,6 +37,7 @@ Prime_Portal::instance();
 Prime_CPT::instance();
 Prime_ACF::instance();
 Prime_Routing::instance();
+Prime_Magic_Login::instance();
 
 // Activation hook — create tables, register roles, flush rewrites.
 register_activation_hook(

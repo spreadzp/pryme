@@ -38,20 +38,6 @@ if ( isset( $_POST['prime_login'] ) && check_admin_referer( 'prime_login', 'prim
 	}
 }
 
-if ( isset( $_POST['prime_magic_link'] ) && check_admin_referer( 'prime_magic_link', 'prime_magic_nonce' ) ) {
-	$email = sanitize_email( wp_unslash( $_POST['magic_email'] ?? '' ) );
-	if ( $email ) {
-		$user = get_user_by( 'email', $email );
-		if ( $user && user_can( $user, 'prime_view_client_portal' ) ) {
-			$magic_url = home_url( '/wp-json/magic-login/v1/request' );
-			wp_redirect( add_query_arg( array( 'email' => $email ), $magic_url ) );
-			exit;
-		}
-		$login_error = __( 'No client account found with this email.', 'prime-core' );
-	} else {
-		$login_error = __( 'Please enter a valid email address.', 'prime-core' );
-	}
-}
 ?>
 <!DOCTYPE html>
 <html <?php language_attributes(); ?>>
@@ -88,7 +74,8 @@ if ( isset( $_POST['prime_magic_link'] ) && check_admin_referer( 'prime_magic_li
 		}
 		.prime-login-form input[type="text"],
 		.prime-login-form input[type="password"],
-		.prime-login-form input[type="email"] {
+		.prime-login-form input[type="email"],
+		.prime-magic-form input[type="email"] {
 			width: 100%;
 			padding: 12px 16px;
 			border: 1px solid #d9d9d9;
@@ -98,7 +85,8 @@ if ( isset( $_POST['prime_magic_link'] ) && check_admin_referer( 'prime_magic_li
 			box-sizing: border-box;
 			transition: border-color 0.2s;
 		}
-		.prime-login-form input:focus {
+		.prime-login-form input:focus,
+		.prime-magic-form input:focus {
 			border-color: #4f46e5;
 			outline: none;
 			box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
@@ -212,6 +200,7 @@ if ( isset( $_POST['prime_magic_link'] ) && check_admin_referer( 'prime_magic_li
 		<form class="prime-magic-form" method="post" action="">
 			<?php wp_nonce_field( 'prime_magic_link', 'prime_magic_nonce' ); ?>
 			<input type="email" name="magic_email" placeholder="<?php esc_attr_e( 'Client email', 'prime-core' ); ?>" required>
+			<input type="hidden" name="action" value="prime_send_magic_link">
 			<input type="submit" name="prime_magic_link" value="<?php esc_attr_e( 'Send Magic Link', 'prime-core' ); ?>" class="prime-login-magic-btn">
 		</form>
 
@@ -224,5 +213,53 @@ if ( isset( $_POST['prime_magic_link'] ) && check_admin_referer( 'prime_magic_li
 		</div>
 	</div>
 	<?php wp_footer(); ?>
+	<?php if ( ! is_user_logged_in() ) : ?>
+	<script>
+	document.addEventListener('DOMContentLoaded', function() {
+	    var magicForm = document.querySelector('.prime-magic-form');
+	    if ( ! magicForm ) return;
+
+	    magicForm.addEventListener('submit', function(e) {
+	        e.preventDefault();
+	        var formData = new FormData(magicForm);
+	        var submitBtn = magicForm.querySelector('input[type="submit"]');
+	        var originalValue = submitBtn.value;
+
+	        submitBtn.value = 'Sending...';
+	        submitBtn.disabled = true;
+
+	        fetch('<?php echo esc_url( admin_url( "admin-ajax.php" ) ); ?>', {
+	            method: 'POST',
+	            body: formData
+	        })
+	        .then(function(res) { return res.json(); })
+	        .then(function(data) {
+	            var errorDiv = document.querySelector('.prime-login-error');
+	            if ( ! errorDiv ) {
+	                errorDiv = document.createElement('div');
+	                errorDiv.className = 'prime-login-error';
+	                magicForm.parentNode.insertBefore(errorDiv, magicForm);
+	            }
+	            if (data.success) {
+	                errorDiv.style.background = '#d1fae5';
+	                errorDiv.style.color = '#065f46';
+	                errorDiv.textContent = data.data.message;
+	            } else {
+	                errorDiv.style.background = '#fee2e2';
+	                errorDiv.style.color = '#991b1b';
+	                errorDiv.textContent = data.data.message || 'Error sending link.';
+	            }
+	        })
+	        .catch(function() {
+	            alert('Network error. Please try again.');
+	        })
+	        .finally(function() {
+	            submitBtn.value = originalValue;
+	            submitBtn.disabled = false;
+	        });
+	    });
+	});
+	</script>
+	<?php endif; ?>
 </body>
 </html>
