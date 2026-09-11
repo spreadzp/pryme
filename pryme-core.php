@@ -28,12 +28,14 @@ require_once PRIME_CORE_PATH . 'includes/class-prime-portal.php';
 require_once PRIME_CORE_PATH . 'includes/class-prime-db.php';
 require_once PRIME_CORE_PATH . 'includes/class-prime-cpt.php';
 require_once PRIME_CORE_PATH . 'includes/class-prime-acf.php';
+require_once PRIME_CORE_PATH . 'includes/class-prime-routing.php';
 require_once PRIME_CORE_PATH . 'includes/functions.php';
 
 // Initialize singletons.
 Prime_Portal::instance();
 Prime_CPT::instance();
 Prime_ACF::instance();
+Prime_Routing::instance();
 
 // Activation hook — create tables, register roles, flush rewrites.
 register_activation_hook(
@@ -50,5 +52,18 @@ register_deactivation_hook(
 	__FILE__,
 	function () {
 		flush_rewrite_rules();
+	}
+);
+
+// Enqueue app layout CSS.
+add_action(
+	'wp_enqueue_scripts',
+	function () {
+		wp_enqueue_style(
+			'prime-app-layout',
+			PRIME_CORE_URL . 'templates/css/app-layout.css',
+			array(),
+			PRIME_CORE_VERSION
+		);
 	}
 );

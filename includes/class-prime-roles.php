@@ -69,6 +69,8 @@ class Prime_Roles {
 				'prime_view_portal',
 				'prime_view_all_clients',
 				'prime_manage_tasks',
+				'prime_view_workspace',
+				'prime_view_client_portal',
 			);
 			foreach ( $caps as $cap ) {
 				$employee->add_cap( $cap );
@@ -78,6 +80,7 @@ class Prime_Roles {
 		$client = get_role( 'prime_client' );
 		if ( $client ) {
 			$client->add_cap( 'prime_view_portal' );
+			$client->add_cap( 'prime_view_client_portal' );
 		}
 
 		$admin = get_role( 'administrator' );
@@ -87,6 +90,9 @@ class Prime_Roles {
 				'prime_view_all_clients',
 				'prime_manage_tasks',
 				'prime_manage_clients',
+				'prime_view_admin',
+				'prime_view_workspace',
+				'prime_view_client_portal',
 			);
 			foreach ( $caps as $cap ) {
 				$admin->add_cap( $cap );

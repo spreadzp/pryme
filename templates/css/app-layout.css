@@ -1,0 +1,65 @@
+.prime-app-layout {
+	display: flex;
+	min-height: 100vh;
+}
+.prime-sidebar {
+	width: 240px;
+	background: #1a1a2e;
+	color: #fff;
+	display: flex;
+	flex-direction: column;
+	flex-shrink: 0;
+}
+.prime-sidebar-header {
+	padding: 20px 24px;
+	font-size: 18px;
+	font-weight: 700;
+	border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.prime-sidebar-header a {
+	color: #fff;
+	text-decoration: none;
+}
+.prime-sidebar-nav {
+	flex: 1;
+	padding: 16px 0;
+}
+.prime-sidebar-nav a {
+	display: block;
+	padding: 10px 24px;
+	color: rgba(255,255,255,0.7);
+	text-decoration: none;
+	font-size: 14px;
+	transition: all 0.2s;
+}
+.prime-sidebar-nav a:hover {
+	color: #fff;
+	background: rgba(255,255,255,0.05);
+}
+.prime-sidebar-nav a.active {
+	color: #fff;
+	background: rgba(79, 70, 229, 0.2);
+	border-left: 3px solid #4f46e5;
+}
+.prime-sidebar-footer {
+	padding: 16px 24px;
+	border-top: 1px solid rgba(255,255,255,0.1);
+	font-size: 13px;
+}
+.prime-sidebar-footer span {
+	display: block;
+	color: rgba(255,255,255,0.8);
+	margin-bottom: 8px;
+}
+.prime-sidebar-footer a {
+	color: rgba(255,255,255,0.5);
+	text-decoration: none;
+}
+.prime-content {
+	flex: 1;
+	padding: 32px;
+	background: #f0f2f5;
+}
+.prime-content h1 {
+	margin-top: 0;
+}
